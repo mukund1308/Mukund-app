@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.DS_Store
+coverage/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+android/.gradle/
+android/app/debug.keystore
+ios/Pods/
+*.log
