@@ -175,14 +175,14 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = <Widget>[
-    DashboardTab(),
-    DocumentsTab(),
-    QualityEventsTab(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      DashboardTab(token: widget.token),
+      DocumentsTab(token: widget.token),
+      QualityEventsTab(token: widget.token),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mukund QMS'),
@@ -199,7 +199,7 @@ class _HomeShellState extends State<HomeShell> {
           ),
         ],
       ),
-      body: _pages[_selectedIndex],
+      body: pages[_selectedIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) => setState(() => _selectedIndex = index),
@@ -214,7 +214,9 @@ class _HomeShellState extends State<HomeShell> {
 }
 
 class DashboardTab extends StatefulWidget {
-  const DashboardTab({super.key});
+  final String token;
+
+  const DashboardTab({super.key, required this.token});
 
   @override
   State<DashboardTab> createState() => _DashboardTabState();
@@ -233,12 +235,9 @@ class _DashboardTabState extends State<DashboardTab> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final token = 'demo-token';
       final api = ApiService();
-      final result = await api.fetchDashboard(token);
-      setState(() {
-        summary = result;
-      });
+      final result = await api.fetchDashboard(widget.token);
+      setState(() => summary = result);
     } catch (_) {
       setState(() => summary = DashboardSummaryModel(
         documents: 0,
@@ -295,7 +294,9 @@ class _DashboardTabState extends State<DashboardTab> {
 }
 
 class DocumentsTab extends StatefulWidget {
-  const DocumentsTab({super.key});
+  final String token;
+
+  const DocumentsTab({super.key, required this.token});
 
   @override
   State<DocumentsTab> createState() => _DocumentsTabState();
@@ -315,7 +316,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
     setState(() => loading = true);
     try {
       final api = ApiService();
-      final result = await api.fetchDocuments('demo-token');
+      final result = await api.fetchDocuments(widget.token);
       setState(() => documents = result);
     } catch (_) {
       setState(() => documents = const []);
@@ -355,7 +356,9 @@ class _DocumentsTabState extends State<DocumentsTab> {
 }
 
 class QualityEventsTab extends StatefulWidget {
-  const QualityEventsTab({super.key});
+  final String token;
+
+  const QualityEventsTab({super.key, required this.token});
 
   @override
   State<QualityEventsTab> createState() => _QualityEventsTabState();
@@ -375,7 +378,7 @@ class _QualityEventsTabState extends State<QualityEventsTab> {
     setState(() => loading = true);
     try {
       final api = ApiService();
-      final result = await api.fetchQualityEvents('demo-token');
+      final result = await api.fetchQualityEvents(widget.token);
       setState(() => events = result);
     } catch (_) {
       setState(() => events = const []);
