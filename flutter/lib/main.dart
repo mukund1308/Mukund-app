@@ -37,6 +37,7 @@ class _MukundQmsAppState extends State<MukundQmsApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Mukund QMS',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
@@ -347,10 +348,85 @@ class _DocumentsTabState extends State<DocumentsTab> {
               title: Text(doc.title),
               subtitle: Text('Status: ${doc.status} • Version ${doc.version}'),
               trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => DocumentDetailScreen(
+                      token: widget.token,
+                      documentId: doc.id,
+                    ),
+                  ),
+                );
+              },
             ),
           );
         },
       ),
+    );
+  }
+}
+
+class DocumentDetailScreen extends StatefulWidget {
+  final String token;
+  final String documentId;
+
+  const DocumentDetailScreen({
+    super.key,
+    required this.token,
+    required this.documentId,
+  });
+
+  @override
+  State<DocumentDetailScreen> createState() => _DocumentDetailScreenState();
+}
+
+class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
+  bool loading = true;
+  Map<String, dynamic> payload = {'versions': []};
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => loading = true);
+    try {
+      final api = ApiService();
+      final result = await api.fetchDocumentVersions(widget.token, widget.documentId);
+      setState(() => payload = result);
+    } catch (_) {
+      setState(() => payload = {'versions': []});
+    } finally {
+      setState(() => loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final versions = (payload['versions'] as List?) ?? const [];
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Document history')),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : versions.isEmpty
+              ? const Center(child: Text('No versions found'))
+              : ListView.builder(
+                  itemCount: versions.length,
+                  itemBuilder: (context, index) {
+                    final version = versions[index] as Map<String, dynamic>;
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      child: ListTile(
+                        title: Text('Version ${version['version'] ?? index + 1}'),
+                        subtitle: Text(version['status'] ?? 'UNKNOWN'),
+                        trailing: Text(version['changeReason'] ?? ''),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
@@ -387,31 +463,121 @@ class _QualityEventsTabState extends State<QualityEventsTab> {
     }
   }
 
+  Future<void> _createEvent() async {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final typeController = TextEditingController(text: 'DEVIATION');
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Raise event'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: typeController,
+                  decoration: const InputDecoration(labelText: 'Type'),
+                ),
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                ),
+                TextField(
+                  controller: descriptionController,
+                  maxLines: 4,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (ok != true) {
+      return;
+    }
+
+    try {
+      final api = ApiService();
+      await api.createQualityEvent(widget.token, {
+        'type': typeController.text.trim(),
+        'title': titleController.text.trim(),
+        'description': descriptionController.text.trim(),
+        'severity': 'MEDIUM',
+        'fields': {'source': 'mobile-app'}
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Quality event created successfully')),
+        );
+      }
+      await _load();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to create quality event')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (events.isEmpty) {
-      return const Center(child: Text('No quality events found'));
-    }
-
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView.builder(
-        itemCount: events.length,
-        itemBuilder: (context, index) {
-          final event = events[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: ListTile(
-              title: Text(event.title),
-              subtitle: Text('${event.type} • ${event.status}'),
-              trailing: const Icon(Icons.arrow_forward_ios),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: FilledButton.icon(
+                onPressed: _createEvent,
+                icon: const Icon(Icons.add),
+                label: const Text('New Event'),
+              ),
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: events.isEmpty
+                ? const Center(child: Text('No quality events found'))
+                : ListView.builder(
+                    itemCount: events.length,
+                    itemBuilder: (context, index) {
+                      final event = events[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: ListTile(
+                          title: Text(event.title),
+                          subtitle: Text('${event.type} • ${event.status}\n${event.description}'),
+                          isThreeLine: true,
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

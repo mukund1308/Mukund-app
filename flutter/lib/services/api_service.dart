@@ -107,10 +107,13 @@ class ApiService {
 
   ApiService({this.baseUrl = 'http://10.0.2.2:3000'});
 
-  Map<String, String> _authHeaders(String? token) => {
-    'Content-Type': 'application/json',
-    if (token != null) 'Authorization': 'Bearer $token',
-  };
+  Map<String, String> _authHeaders(String? token) {
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
 
   Future<Map<String, dynamic>> login(String username, String password) async {
     final response = await http.post(
@@ -137,7 +140,22 @@ class ApiService {
     }
 
     final body = jsonDecode(response.body) as List;
-    return body.map((item) => DocumentModel.fromJson(item as Map<String, dynamic>)).toList();
+    return body
+        .map((item) => DocumentModel.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> fetchDocumentVersions(String token, String documentId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/documents/$documentId/versions'),
+      headers: _authHeaders(token),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch document versions');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   Future<List<QualityEventModel>> fetchQualityEvents(String token) async {
@@ -151,7 +169,26 @@ class ApiService {
     }
 
     final body = jsonDecode(response.body) as List;
-    return body.map((item) => QualityEventModel.fromJson(item as Map<String, dynamic>)).toList();
+    return body
+        .map((item) => QualityEventModel.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> createQualityEvent(
+    String token,
+    Map<String, dynamic> payload,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/quality-events'),
+      headers: _authHeaders(token),
+      body: jsonEncode(payload),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Failed to create quality event');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   Future<DashboardSummaryModel> fetchDashboard(String token) async {
@@ -164,6 +201,8 @@ class ApiService {
       throw Exception('Failed to fetch dashboard');
     }
 
-    return DashboardSummaryModel.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    return DashboardSummaryModel.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
   }
 }
