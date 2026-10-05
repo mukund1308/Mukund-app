@@ -109,7 +109,7 @@ class ApiService {
 
   Map<String, String> _authHeaders(String? token) => {
     'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
+    if (token != null) 'Authorization': 'Bearer $token',
   };
 
   Future<Map<String, dynamic>> login(String username, String password) async {

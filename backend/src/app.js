@@ -70,7 +70,12 @@ export function createApp() {
     }
 
     const token = jwt.sign(
-      { id: result.user.id, username: result.user.username, role: result.user.role, fullName: result.user.fullName },
+      {
+        id: result.user.id,
+        username: result.user.username,
+        role: result.user.role,
+        fullName: result.user.fullName
+      },
       config.jwtSecret,
       { expiresIn: '8h' }
     );
