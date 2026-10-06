@@ -1,18 +1,17 @@
 name: mukund_qms
-
-description: Flutter app starter for the Mukund QMS project.
+description: Mukund QMS - Pharmaceutical Quality Management System for regulated workflow tracking, document lifecycle management, and quality event handling.
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 0.15.0+15
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.16.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.0.0
-
+  http: ^1.1.0
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

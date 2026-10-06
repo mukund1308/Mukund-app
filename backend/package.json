@@ -1,13 +1,17 @@
 {
   "name": "mukund-qms-backend",
-  "version": "1.0.0",
-  "description": "Backend API for the Mukund QMS app scaffold",
+  "version": "0.15.0",
+  "description": "Backend API for Mukund QMS - Quality Management System for pharmaceutical and regulated industries",
   "main": "src/app.js",
   "type": "module",
   "scripts": {
     "start": "node src/app.js",
     "test": "node --test",
     "create-user": "node src/scripts/create-user.js"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
